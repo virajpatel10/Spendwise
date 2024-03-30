@@ -77,10 +77,10 @@ WSGI_APPLICATION = "Spendwise.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get('DB_NAME'),
-        "USER":os.environ.get('DB_USER'),
-        "PASSWORD":os.environ.get('DB_USER_PASSWORD'),
-        "HOST":os.environ.get('DB_HOST'),
+        "NAME": 'Spendwise',
+        "USER":'postgres',
+        "PASSWORD":'Vv#1092001',
+        "HOST":'localhost',
     }
 }
 
