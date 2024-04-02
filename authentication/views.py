@@ -30,7 +30,7 @@ class BaseAuthView(View):
 
 class RegistrationView(BaseAuthView):
     def get(self, request):
-        return render(request, 'authentication/register.html')
+        return render(request, 'authentication/signup.html')
 
     def post(self, request):
         _username = request.POST['username']
@@ -44,7 +44,7 @@ class RegistrationView(BaseAuthView):
             return render(request, 'authentication/register.html')
         else:
             messages.error(request, 'User registration failed')
-            return render(request, 'authentication/register.html', context)
+            return render(request, 'authentication/signup.html', context)
 
     def _create_user(self, request, username, email, password):
         if not User.objects.filter(username=username).exists():
