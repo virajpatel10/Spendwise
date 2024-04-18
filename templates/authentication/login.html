@@ -1,105 +1,68 @@
-{% extends 'base_auth.html' %}
 {% load static %}
-
-
-{% block content %}
-
-<!-- <div class="row">
-  <div class="col-md-4"></div>
-  <div class="col-md-4">
-    <div class="card mt-5">
-
-
-      <div class="card-body" style="height: 35rem;">
-        <div class="card-title py-3">
-          <h4 style="margin-top: 8rem;"> Login to your  account</h4>
-        </div>
-        <form action="{% url 'login' %}" method="post">
-          {% csrf_token %}
-
-          {% include 'partials/_messages.html' %}
-          <div class="form-group">
-            <input
-              type="text"
-              name="username"
-              placeholder="username"
-              id="usernameField"
-              value="{{fieldValues.username}}"
-              class="form-control form-control-sm"
-            />
-          </div>
-          <div class="form-group">
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              class="form-control form-control-sm"
-              id="passwordField"
-            />
-          </div>
-          <input type="submit" value="Login" class="btn btn-block btn-primary submit-btn" />
-        </form>
-
-      </div>
-
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4"></div>
-</div> -->
-
-<!-- <script src="{% static 'js/register.js' %}"></script> -->
-
-
-<!-- /////////// -->
-
-
-<section class="h-100 gradient-form" style="background-color: #eee;">
-  <div class="container py-5 h-100">
-    <div class="row d-flex justify-content-center align-items-center h-100">
-      <div class="col-xl-10">
-        <div class="card rounded-3 text-black">
-          <div class="row g-0">
-            <div class="col-lg-6">
-              <div class="card-body p-md-5 mx-md-4">
-
-                <div class="text-center">
-                  <h4 class="mt-1 mb-5 pb-1">Login to your account</h4>
-                </div>
-
-                <form action="{% url 'login' %}" method="post">
-                  {% csrf_token %}
-                  {% include 'partials/_messages.html' %}
-                  <div class="form-outline mb-4">
-                    <input type="text" id="usernameField" name="username" class="form-control"
-                      value="{{ fieldValues.username }}" />
-                    <label class="form-label" for="usernameField">Username</label>
-                  </div>
-
-                  <div class="form-outline mb-4">
-                    <input type="password" id="passwordField" name="password" class="form-control" />
-                    <label class="form-label" for="passwordField">Password</label>
-                  </div>
-
-                  <button type="submit" class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3">Login</button>
-                </form>
-
-              </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="Description" content="Enter your description here"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href={% static "css/style.css" %}>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src={% static "js/script.js" %}></script>
+    <title>Login Page</title>
+</head>
+<body>
+    <center>
+        {% if messages %}
+            {% for message in messages %} 
+            <div class="alert {{message.tags}} m-1" role="alert">
+                {{message}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
             </div>
-            <div class="col-lg-6 d-flex align-items-center gradient-custom-2">
-              <div class="text-white px-3 py-4 p-md-5 mx-md-4">
-                <h4 class="mb-4" style="color: #2f2f2f; font-weight: bold;">Unlock Your Financial Potential with <span style="color: #000;">Spendwise</span></h4>
-                <div class="d-flex align-items-center">
-                  <p class="small mb-0" style="color: 2f2f2f; line-height: 1.4;">Welcome to Spendwise – where your financial journey begins anew! We're not just a company; we're your trusted companion in the quest for financial freedom. Discover the power of smart spending, insightful savings, and effortless financial management. Let's embark on this exciting adventure together!</p>
+            {% endfor %} 
+        {% endif %}
+    </center>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-2"></div>
+            <div class="col-lg-6 col-md-8 login-box">
+                <div class="col-lg-12 login-key">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
                 </div>
-              </div>
+                <div class="col-lg-12 login-title">
+                    LOG IN
+                </div>
+                <p class="text-center">Don't have an Account? <a href="{% url 'Register' %}" name = 'Register'>Register</a></p>
+                <div class="col-lg-12 login-form">
+                    <div class="col-lg-12 login-form">
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <input type="text" class="form-control" name="username" placeholder="Username" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" class="form-control" name="password" id="pwd1" placeholder="Password" required>
+                                <span id="toggle3" onclick="toggl3()">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                            <p class="text-right"><a href="{% url 'reset_password' %}" name = 'reset_password'>Forgot Password?</a></p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" type="submit">Login</button>
+                            </div>
+                            <br> 
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-2"></div>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
-</section>
 
-
-{% endblock content %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

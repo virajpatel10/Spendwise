@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 import json
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-#from userpreferences.models import UserPreference
+from userpreferences.models import UserPreference
 import datetime
 
 def search_expenses(request):
@@ -27,11 +27,15 @@ def index(request):
     paginator = Paginator(expenses, 5)
     page_number = request.GET.get('page')
     page_obj = Paginator.get_page(paginator, page_number)
-    #currency = UserPreference.objects.get(user=request.user).currency
+    exists = UserPreference.objects.filter(user=request.user).exists()
+    if exists:
+        currency = UserPreference.objects.get(user=request.user).currency
+    else:
+        return redirect('preferences')
     context = {
         'expenses': expenses,
         'page_obj': page_obj,
-        #'currency': currency
+        'currency': currency,
     }
     return render(request, 'expenses/index.html', context)
 

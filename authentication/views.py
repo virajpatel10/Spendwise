@@ -30,21 +30,26 @@ class BaseAuthView(View):
 
 class RegistrationView(BaseAuthView):
     def get(self, request):
-        return render(request, 'authentication/signup.html')
+        return render(request, 'Register.html')
 
     def post(self, request):
         _username = request.POST['username']
         _email = request.POST['email']
-        _password = request.POST['password']
+        _password = request.POST['password1']
+        _Confirm_password = request.POST['password2']
+
+        if _password != _Confirm_password:
+            messages.error(request, 'User registration failed')
+            return render(request, 'Register.html', context)
 
         context = {'fieldValues': request.POST}
 
         if self._create_user(request, _username, _email, _password):
             messages.success(request, 'Account successfully created')
-            return render(request, 'authentication/register.html')
+            return redirect('Login')
         else:
             messages.error(request, 'User registration failed')
-            return render(request, 'authentication/signup.html', context)
+            return render(request, 'Register.html', context)
 
     def _create_user(self, request, username, email, password):
         if not User.objects.filter(username=username).exists():
@@ -55,8 +60,9 @@ class RegistrationView(BaseAuthView):
 
                 user = User.objects.create_user(username=username, email=email)
                 user.set_password(password)
-                user.is_active = False
+                user.is_active = True
                 user.save()
+                print("created")
                 return True
         return False
 
@@ -76,37 +82,35 @@ class UsernameValidationView(BaseAuthView):
 
 class LoginView(BaseAuthView):
     def get(self, request):
-        return render(request, 'authentication/login.html')
+        return render(request, 'Login.html')
 
     def post(self, request):
-        _username = request.POST['username']
-        _password = request.POST['password']
+        username = request.POST['username']
+        password = request.POST['password']
 
-        if self._authenticate_user(request, _username, _password):
-            return redirect('expenses')
-        else:
-            messages.error(request, 'Invalid credentials, try again')
-            return render(request, 'authentication/login.html')
-
-    def _authenticate_user(self, request, username, password):
         if username and password:
             user = auth.authenticate(username=username, password=password)
+            print(user)
             if user:
                 if user.is_active:
                     auth.login(request, user)
-                    messages.success(request, f'Welcome, {user.username}, you are now logged in')
-                    return True
-                else:
-                    messages.error(request, 'Account is not active')
-            else:
-                messages.error(request, 'Invalid credentials, try again')
-        else:
-            messages.error(request, 'Please fill all fields')
-        return False
+                    messages.success(request, 'Welcome, ' +
+                                     user.username+' you are now logged in')
+                    return redirect('expenses')
+                messages.error(
+                    request, 'Account is not active,please check your email')
+                return render(request, 'Login.html')
+            messages.error(
+                request, 'Invalid credentials,try again')
+            return render(request, 'Login.html')
+
+        messages.error(
+            request, 'Please fill all fields')
+        return render(request, 'Login.html')
 
 
 class LogoutView(View):
     def post(self, request):
         auth.logout(request)
         messages.success(request, 'You have been logged out')
-        return redirect('login')
+        return redirect('Login')
