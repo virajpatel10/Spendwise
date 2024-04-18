@@ -4,18 +4,19 @@ import json
 from .models import IncomeSource, IncomeRecord
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.list import ListView
-from django.shortcuts import redirect
+
+
 #from userpreferences.models import UserPreference
 
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404
-from django.views.generic.edit import UpdateView
-from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
 from django import forms
-from django.core.exceptions import PermissionDenied
 from django.views.generic.edit import FormView
+from django.urls import reverse_lazy
+from django.contrib import messages
+
+from django.core.exceptions import PermissionDenied
+from django.views.generic.edit import UpdateView
 
 
 class SearchIncomeView(LoginRequiredMixin, View):
@@ -32,8 +33,32 @@ class SearchIncomeView(LoginRequiredMixin, View):
         )
         data = list(__income.values())
         return JsonResponse(data, safe=False)
+    
 
-class IncomeForm(forms.ModelForm):
+
+class IndexView(LoginRequiredMixin, ListView):
+    model = IncomeRecord
+    template_name = 'income/index.html'
+    context_object_name = 'income_records'
+    paginate_by = 5
+    login_url = '/authentication/login'
+
+    def get_queryset(self):
+        # Filtering the queryset by the logged-in user
+        return IncomeRecord.objects.filter(owner=self.request.user).order_by('-date')
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super().get_context_data(**kwargs)
+        # Get user's currency preference or set a default
+        '''
+        user_pref = UserPreference.objects.filter(user=self.request.user).first()
+        context['currency'] = user_pref.currency if user_pref else 'USD'  # Assuming 'USD' as default'''
+        return context
+    
+
+
+class incomeForm(forms.ModelForm):
     class Meta:
         model = IncomeRecord
         fields = ['amount', 'description', 'date', 'source']
@@ -41,33 +66,9 @@ class IncomeForm(forms.ModelForm):
             'date': 'Income Date'
         }
 
-class IndexView(LoginRequiredMixin, ListView):
-    model = IncomeRecord
-    template_name = 'income/index.html'
-    context_object_name = 'income'
-    paginate_by = 5
-    login_url = '/authentication/login'
-
-    def get_queryset(self):
-        # Filter the queryset by the logged-in user
-        return IncomeRecord.objects.filter(owner=self.request.user).order_by('-date')
-
-    def get_context_data(self, **kwargs):
-        # Call the base implementation first to get the context
-        context = super().get_context_data(**kwargs)
-        # Add in the user's currency
-
-        #add userpref
-
-        '''
-        user_preference = UserPreference.objects.filter(user=self.request.user).first()
-        context['currency'] = user_preference.currency if user_preference else 'USD'  # Default to 'USD' if not set'''
-
-        return context
-
 class AddIncomeView(LoginRequiredMixin, FormView):
     template_name = 'income/add_income.html'
-    form_class = IncomeForm
+    form_class = incomeForm
     success_url = reverse_lazy('income')  # Assuming 'income' is the name of the url for the income list view
 
     login_url = '/authentication/login'
@@ -89,10 +90,10 @@ class AddIncomeView(LoginRequiredMixin, FormView):
         # Handle invalid form submissions
         messages.error(self.request, 'Error saving form')
         return super().form_invalid(form)
-
+    
 class IncomeEditView(LoginRequiredMixin, UpdateView):
     model = IncomeRecord
-    form_class = IncomeForm
+    form_class = incomeForm
     template_name = 'income/edit_income.html'
     success_url = reverse_lazy('income')  # Redirect to the income list view upon success
 
@@ -119,8 +120,7 @@ class IncomeEditView(LoginRequiredMixin, UpdateView):
         if obj.owner != self.request.user:
             raise PermissionDenied  # Import PermissionDenied from django.core.exceptions
         return obj
-
-
+    
 class DeleteIncomeView(LoginRequiredMixin, View):
     login_url = '/authentication/login'
     # Assuming 'income' is the name of the URL to redirect to after deletion
