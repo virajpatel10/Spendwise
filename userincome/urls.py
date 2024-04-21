@@ -1,11 +1,13 @@
 from django.urls import path
-from .views import SearchIncomeView, IndexView, AddIncomeView, IncomeEditView, DeleteIncomeView
+from . import views
+
+from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
-    path('', IndexView.as_view(), name='index'),
-    path('search-income', SearchIncomeView.as_view(),
-         name="search_income"),
-   path('add_income/', AddIncomeView.as_view(), name='add_income'),
-   path('edit_income/<int:pk>/', IncomeEditView.as_view(), name='edit_income'),
-   path('income-delete/<int:id>', DeleteIncomeView.as_view(), name="income-delete")
+    path('', views.index, name="income"),
+    path('add-income', views.add_income, name="add-income"),
+    path('edit-income/<int:id>', views.income_edit, name="income-edit"),
+    path('income-delete/<int:id>', views.delete_income, name="income-delete"),
+    path('search-income', csrf_exempt(views.search_income),
+         name="search-income")
 ]

@@ -1,3 +1,5 @@
+from django.shortcuts import render
+
 # Create your views here.
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -9,136 +11,98 @@ import json
 from .models import Source, UserIncome
 from userpreferences.models import UserPreference
 
-from django.views import View
-from django.http import JsonResponse
-import json
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.list import ListView
-from django import forms
-from django.views.generic.edit import FormView
-from django.urls import reverse_lazy
-from django.contrib import messages
+def search_income(request):
+    if request.method == 'POST':
+        search_term = json.loads(request.body).get('searchText')
+        incomes = UserIncome.objects.filter(
+            amount__istartswith=search_term, owner=request.user) | UserIncome.objects.filter(
+            date__istartswith=search_term, owner=request.user) | UserIncome.objects.filter(
+            description__icontains=search_term, owner=request.user) | UserIncome.objects.filter(
+            source__icontains=search_term, owner=request.user)
+        result = incomes.values()
+        return JsonResponse(list(result), safe=False)
 
-from django.core.exceptions import PermissionDenied
-from django.views.generic.edit import UpdateView
+@login_required(login_url='/authentication/login')
+def index(request):
+    sources = Source.objects.all()
+    incomes = UserIncome.objects.filter(owner=request.user).order_by('date')
 
+    print(incomes)
 
+    paginator = Paginator(incomes, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    currency_type = UserPreference.objects.get(user=request.user).currency
+    context = {
+        'incomes': incomes,
+        'page_obj': page_obj,
+        'currency': currency_type
+    }
+    return render(request, 'income/index.html', context)
 
-class SearchIncomeView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
-        search_str = json.loads(request.body).get('searchText')
-        __income = UserIncome.objects.filter(
-            amount__istartswith=search_str, owner=request.user
-        ) | UserIncome.objects.filter(
-            date__istartswith=search_str, owner=request.user
-        ) | UserIncome.objects.filter(
-            description__icontains=search_str, owner=request.user
-        ) | UserIncome.objects.filter(
-            source__icontains=search_str, owner=request.user
-        )
-        data = list(__income.values())
-        return JsonResponse(data, safe=False)
+@login_required(login_url='/authentication/login')
+def add_income(request):
+    sources = Source.objects.all()
+    context = {
+        'sources': sources,
+        'values': request.POST
+    }
+    if request.method == 'GET':
+        return render(request, 'income/add_income.html', context)
     
+    if request.method == 'POST':
+        amount = request.POST['amount']
+        description = request.POST['description']
+        date = request.POST['income_date']
+        source = request.POST['source']
 
+        if not amount:
+            messages.error(request, 'Amount is required')
+            return render(request, 'income/add_income.html', context)
+        if not description:
+            messages.error(request, 'Description is required')
+            return render(request, 'income/add_income.html', context)
 
-class IndexView(LoginRequiredMixin, ListView):
-    model = UserIncome
-    template_name = 'income/index.html'
-    context_object_name = 'income_records'
-    paginate_by = 5
-    login_url = '/authentication/login'
+        UserIncome.objects.create(owner=request.user, amount=amount, date=date,
+                                  source=source, description=description)
+        messages.success(request, 'Income record added successfully')
+        return redirect('income')
 
-    def get_queryset(self):
-        # Filtering the queryset by the logged-in user
-        return UserIncome.objects.filter(owner=self.request.user).order_by('-date')
+@login_required(login_url='/authentication/login')
+def income_edit(request, id):
+    income_record = UserIncome.objects.get(pk=id)
+    sources = Source.objects.all()
+    context = {
+        'income': income_record,
+        'values': income_record,
+        'sources': sources
+    }
+    if request.method == 'GET':
+        return render(request, 'income/edit_income.html', context)
+    if request.method == 'POST':
+        amount = request.POST['amount']
+        description = request.POST['description']
+        date = request.POST['income_date']
+        source = request.POST['source']
 
-    def get_context_data(self, **kwargs):
-        # Call the base implementation first to get a context
-        context = super().get_context_data(**kwargs)
-        # Get user's currency preference or set a default
-        '''
-        user_pref = UserPreference.objects.filter(user=self.request.user).first()
-        context['currency'] = user_pref.currency if user_pref else 'USD'  # Assuming 'USD' as default'''
-        return context
-    
+        if not amount:
+            messages.error(request, 'Amount is required')
+            return render(request, 'income/edit_income.html', context)
+        if not description:
+            messages.error(request, 'Description is required')
+            return render(request, 'income/edit_income.html', context)
 
+        income_record.amount = amount
+        income_record.date = date
+        income_record.source = source
+        income_record.description = description
+        income_record.save()
+        messages.success(request, 'Income record updated successfully')
+        return redirect('income')
 
-class incomeForm(forms.ModelForm):
-    class Meta:
-        model = UserIncome
-        fields = ['amount', 'description', 'date', 'source']
-        labels = {
-            'date': 'Income Date'
-        }
-
-class AddIncomeView(LoginRequiredMixin, FormView):
-    template_name = 'income/add_income.html'
-    form_class = incomeForm
-    success_url = reverse_lazy('income')  # Assuming 'income' is the name of the url for the income list view
-
-    login_url = '/authentication/login'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['sources'] = Source.objects.all()
-        return context
-
-    def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
-        form.instance.owner = self.request.user
-        form.save()
-        messages.success(self.request, 'Record saved successfully')
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        # Handle invalid form submissions
-        messages.error(self.request, 'Error saving form')
-        return super().form_invalid(form)
-    
-class IncomeEditView(LoginRequiredMixin, UpdateView):
-    model = UserIncome
-    form_class = incomeForm
-    template_name = 'income/edit_income.html'
-    success_url = reverse_lazy('income')  # Redirect to the income list view upon success
-
-    login_url = '/authentication/login'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['sources'] = Source.objects.all()  # Add the income sources to the context
-        return context
-
-    def form_valid(self, form):
-        # Optionally, add any additional logic here before saving the form
-        messages.success(self.request, 'Record updated successfully')
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        # Optionally, handle the case where the form is invalid
-        messages.error(self.request, 'Error updating the record')
-        return super().form_invalid(form)
-
-    def get_object(self, queryset=None):
-        """Ensure that the user can only edit their own income records."""
-        obj = super().get_object(queryset)
-        if obj.owner != self.request.user:
-            raise PermissionDenied  # Import PermissionDenied from django.core.exceptions
-        return obj
-    
-class DeleteIncomeView(LoginRequiredMixin, View):
-    login_url = '/authentication/login'
-    # Assuming 'income' is the name of the URL to redirect to after deletion
-    redirect_url = reverse_lazy('income')
-
-    def get(self, request, *args, **kwargs):
-        # Normally, deletion should be handled with POST request to ensure safety,
-        # but if you're following the pattern from your original function:
-        income_id = kwargs.get('id')
-        income = UserIncome.objects.filter(pk=income_id, owner=request.user).first()
-        if income:
-            income.delete()
-            messages.success(request, 'Record removed')
-        else:
-            messages.error(request, 'Record not found')
-        return redirect(self.redirect_url)
+@login_required(login_url='/authentication/login')
+def delete_income(request, id):
+    income_record = UserIncome.objects.get(pk=id)
+    income_record.delete()
+    messages.success(request, 'Income record removed')
+    return redirect('income')
