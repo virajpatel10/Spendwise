@@ -35,8 +35,6 @@ class RegistrationView(BaseAuthView):
     def post(self, request):
         _username = request.POST['username']
         _email = request.POST['email']
-        _first_name = request.POST['first_name']
-        _last_name = request.POST['last_name']
         _password = request.POST['password1']
         _Confirm_password = request.POST['password2']
 
@@ -46,21 +44,21 @@ class RegistrationView(BaseAuthView):
 
         context = {'fieldValues': request.POST}
 
-        if self._create_user(request, _username, _email, _password, _first_name, _last_name):
+        if self._create_user(request, _username, _email, _password):
             messages.success(request, 'Account successfully created')
             return redirect('Login')
         else:
             messages.error(request, 'User registration failed')
             return render(request, 'Register.html', context)
 
-    def _create_user(self, request, username, email, password, _first_name, _last_name):
+    def _create_user(self, request, username, email, password):
         if not User.objects.filter(username=username).exists():
             if not User.objects.filter(email=email).exists():
                 if len(password) < 6:
                     messages.error(request, 'Password too short')
                     return False
 
-                user = User.objects.create_user(username=username, email=email, first_name = _first_name,last_name=_last_name)
+                user = User.objects.create_user(username=username, email=email)
                 user.set_password(password)
                 user.is_active = True
                 user.save()

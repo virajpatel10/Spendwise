@@ -1,9 +1,12 @@
-# from django.shortcuts import render
-# import os
-# import json
-# from django.conf import settings
-# from .models import UserPreference
-# from django.contrib import messages
+from django.shortcuts import render
+import os
+import json
+from django.conf import settings
+from .models import UserPreference
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.messages.views import SuccessMessageMixin
 # # Create your views here.
 
 
@@ -46,3 +49,7 @@ def index(request):
     # Any logic you need goes here
     return render(request, 'preferences/index.html')
 
+class ChangePasswordView(SuccessMessageMixin, PasswordChangeView):
+    template_name = 'preferences/change_password.html'
+    success_message = "Successfully Changed Your Password"
+    success_url = reverse_lazy('preferences')  

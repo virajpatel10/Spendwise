@@ -25,7 +25,10 @@ def search_income(request):
 @login_required(login_url='/authentication/login')
 def index(request):
     sources = Source.objects.all()
-    incomes = UserIncome.objects.filter(owner=request.user)
+    incomes = UserIncome.objects.filter(owner=request.user).order_by('date')
+
+    print(incomes)
+
     paginator = Paginator(incomes, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -103,3 +106,27 @@ def delete_income(request, id):
     income_record.delete()
     messages.success(request, 'Income record removed')
     return redirect('income')
+
+
+@login_required(login_url='/authentication/login')
+def income_summary(request):
+    incomes = UserIncome.objects.filter(owner=request.user).order_by('date')
+    income_dates = [income.date.isoformat() for income in incomes]
+    # Extract dates and amounts for the chart
+    #income_dates = list(incomes.values_list('date', flat=True))
+    income_amounts = list(incomes.values_list('amount', flat=True))
+
+    paginator = Paginator(incomes, 5)  # Adjust the page size as needed
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    currency_type = UserPreference.objects.get(user=request.user).currency
+
+    context = {
+        'page_obj': page_obj,
+        'currency': currency_type,
+        'income_dates': json.dumps(income_dates),  # Serialize for JSON
+        'income_amounts': json.dumps(income_amounts)  # Serialize for JSON
+    }
+    
+    return render(request, 'income/stats.html', context)
