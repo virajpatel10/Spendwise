@@ -4,6 +4,9 @@ import json
 from django.conf import settings
 from .models import UserPreference
 from django.contrib import messages
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.messages.views import SuccessMessageMixin
 # Create your views here.
 
 
@@ -37,3 +40,8 @@ def index(request):
             UserPreference.objects.create(user=request.user, currency=currency)
         messages.success(request, 'Changes saved')
         return render(request, 'preferences/index.html', {'currencies': currency_data, 'user_preferences': user_preferences})
+    
+class ChangePasswordView(SuccessMessageMixin, PasswordChangeView):
+    template_name = 'preferences/change_password.html'
+    success_message = "Successfully Changed Your Password"
+    success_url = reverse_lazy('preferences')  
