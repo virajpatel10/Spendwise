@@ -155,29 +155,29 @@ def delete_expense(request, id):
 
 def expense_category_summary(request):
     todays_date = datetime.date.today()
-    six_months_ago = todays_date - datetime.timedelta(days=30*6)
-    expenses = Expense.objects.filter(
-        owner=request.user,
-        date__gte=six_months_ago, 
-        date__lte=todays_date
-    ).values('category').annotate(total_amount=Sum('amount')).order_by('-total_amount')
+    six_months_ago = todays_date-datetime.timedelta(days=30*6)
+    expenses = Expense.objects.filter(owner=request.user,
+                                      date__gte=six_months_ago, date__lte=todays_date)
+    finalrep = {}
 
-    finalrep = {expense['category']: expense['total_amount'] for expense in expenses}
+    def get_category(expense):
+        return expense.category
+    category_list = list(set(map(get_category, expenses)))
+
+    def get_expense_category_amount(category):
+        amount = 0
+        filtered_by_category = expenses.filter(category=category)
+
+        for item in filtered_by_category:
+            amount += item.amount
+        return amount
+
+    for x in expenses:
+        for y in category_list:
+            finalrep[y] = get_expense_category_amount(y)
+
     return JsonResponse({'expense_category_data': finalrep}, safe=False)
 
-def stats_view(request):
-    '''
-    todays_date = datetime.date.today()
-    six_months_ago = todays_date - datetime.timedelta(days=30*6)
-    total_expenses_last_six_months = Expense.objects.filter(
-        owner=request.user,
-        date__gte=six_months_ago, 
-        date__lte=todays_date
-    ).aggregate(Sum('amount'))
 
-    # You can add more context as needed
-    context = {
-        'total_expenses_last_six_months': total_expenses_last_six_months['amount__sum'] or 0,
-    }'''
-    
+def stats_view(request):
     return render(request, 'expenses/stats.html')
